@@ -133,10 +133,12 @@
   NSArray* fragments = [self fragmentsOfCharacterRanges:ranges
                                        usingTextStorage:textStorage
                                            withDocument:document];
+
   NSArray* selectionRanges =
       [self selectionRangesAfterReplacingFragments:fragments
                                   usingTextStorage:textStorage
-                                      withDocument:document];
+                               inContextOfDocument:document];
+
   if (selectionRanges.count > 0)
     [[TRVSXcode textView] setSelectedRanges:selectionRanges];
 }
@@ -158,6 +160,27 @@
       [self addSelectedRangeToSelectedRanges:selectionRanges
                             usingTextStorage:textStorage];
 
+      [textStorage endEditing];
+  }];
+
+  return selectionRanges;
+}
+
+- (NSArray*)
+    selectionRangesAfterReplacingFragments:(NSArray*)fragments
+                          usingTextStorage:(DVTSourceTextStorage*)textStorage
+                       inContextOfDocument:(IDESourceCodeDocument*)document {
+  NSMutableArray* selectionRanges = [[NSMutableArray alloc] init];
+
+  [fragments enumerateObjectsUsingBlock:^(TRVSCodeFragment* fragment,
+                                          NSUInteger idx,
+                                          BOOL* stop) {
+      [textStorage beginEditing];
+      [textStorage replaceCharactersInRange:fragment.range
+                                 withString:fragment.formattedString
+                            withUndoManager:document.undoManager];
+      [selectionRanges
+          addObject:[NSValue valueWithRange:fragment.characterRange]];
       [textStorage endEditing];
   }];
 
