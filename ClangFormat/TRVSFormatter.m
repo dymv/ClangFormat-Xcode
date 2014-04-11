@@ -46,7 +46,7 @@
     return;
 
   [self formatRanges:[[TRVSXcode textView] selectedRanges]
-          inDocument:[TRVSXcode sourceCodeDocument]];
+      inContextOfDocument:[TRVSXcode sourceCodeDocument]];
 }
 
 - (void)formatSelectedFiles {
@@ -127,6 +127,20 @@
     [[TRVSXcode textView] setSelectedRanges:selectionRanges];
 }
 
+- (void)formatRanges:(NSArray*)ranges
+    inContextOfDocument:(IDESourceCodeDocument*)document {
+  DVTSourceTextStorage* textStorage = [document textStorage];
+  NSArray* fragments = [self fragmentsOfCharacterRanges:ranges
+                                       usingTextStorage:textStorage
+                                           withDocument:document];
+  NSArray* selectionRanges =
+      [self selectionRangesAfterReplacingFragments:fragments
+                                  usingTextStorage:textStorage
+                                      withDocument:document];
+  if (selectionRanges.count > 0)
+    [[TRVSXcode textView] setSelectedRanges:selectionRanges];
+}
+
 - (NSArray *)
     selectionRangesAfterReplacingFragments:(NSArray *)fragments
                           usingTextStorage:(DVTSourceTextStorage *)textStorage
@@ -198,6 +212,31 @@
 
       [fragments addObject:fragment];
   }];
+
+  return fragments;
+}
+
+- (NSArray*)fragmentsOfCharacterRanges:(NSArray*)characterRanges
+                      usingTextStorage:(DVTSourceTextStorage*)textStorage
+                          withDocument:(IDESourceCodeDocument*)document {
+  NSMutableArray* fragments = [NSMutableArray array];
+  for (NSValue* rangeValue in characterRanges) {
+    NSRange characterRange = [rangeValue rangeValue];
+
+    if (characterRange.location == NSNotFound)
+      break;
+
+    TRVSCodeFragment* fragment = [[TRVSCodeFragment alloc] init];
+    fragment.string = [textStorage string];
+    fragment.range = NSMakeRange(0, [textStorage string].length);
+    fragment.characterRange = characterRange;
+    fragment.fileURL = document.fileURL;
+
+    [fragment formatWithStyle:self.style
+        usingClangFormatAtLaunchPath:self.executablePath];
+
+    [fragments addObject:fragment];
+  }
 
   return fragments;
 }

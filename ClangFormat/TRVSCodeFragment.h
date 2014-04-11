@@ -16,6 +16,7 @@
 @property (nonatomic, copy) NSString *string;
 @property (nonatomic, copy) NSString *formattedString;
 @property (nonatomic) NSRange range;
+@property (nonatomic) NSRange characterRange;
 @property (nonatomic, strong) NSURL *fileURL;
 
 @end

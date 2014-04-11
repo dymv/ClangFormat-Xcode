@@ -23,11 +23,22 @@
   NSTask *task = [[NSTask alloc] init];
   task.standardOutput = outputPipe;
   task.launchPath = launchPath;
-  task.arguments = @[
-    [NSString stringWithFormat:@"--style=%@", style],
-    @"-i",
-    [tmpFileURL path]
-  ];
+
+  NSMutableArray* arguments = [NSMutableArray arrayWithArray:@[
+    [NSString stringWithFormat:@"-style=%@", style],
+    @"-i"
+  ]];
+
+  if (self.characterRange.length > 0) {
+    [arguments addObjectsFromArray:@[
+      [NSString stringWithFormat:@"-offset=%lu", self.characterRange.location],
+      [NSString stringWithFormat:@"-length=%lu", self.characterRange.length]
+    ]];
+  }
+
+  [arguments addObject:[tmpFileURL path]];
+
+  task.arguments = [arguments copy];
 
   [outputPipe.fileHandleForReading readToEndOfFileInBackgroundAndNotify];
 
